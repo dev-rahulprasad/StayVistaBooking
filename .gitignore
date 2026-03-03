@@ -7,9 +7,28 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage and test outputs
+coverage
+*.lcov
+
+# Build output
 node_modules
 dist
 dist-ssr
+.cache
+.vite
+*.tsbuildinfo
+
+# Local environment files
+.env
+.env.*
+!.env.example
 *.local
 
 # Editor directories and files
@@ -17,8 +36,14 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+.DS_Store?
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# OS / temporary files
+*.tmp
+*.temp

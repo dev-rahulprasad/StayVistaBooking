@@ -6,7 +6,7 @@ import { AuthProvider } from "./context/AuthContext"
 import { BookingProvider } from "./context/BookingContext"
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <BrowserRouter>
+  <BrowserRouter basename={import.meta.env.BASE_URL}>
     <AuthProvider>
       <BookingProvider>
         <App />
