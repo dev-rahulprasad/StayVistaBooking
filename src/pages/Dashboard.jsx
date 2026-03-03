@@ -104,8 +104,8 @@ export default function Dashboard() {
           aria-label="Available Rooms"
           className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
         >
-          {rooms.map((room) => (
-            <RoomCard key={room.id} room={room} />
+          {rooms.map((room, index) => (
+            <RoomCard key={room.id} room={room} serialNumber={index + 1} />
           ))}
         </section>
       </main>

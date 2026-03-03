@@ -17,7 +17,7 @@ function isDateUnavailable(dateValue, roomName, bookings) {
   })
 }
 
-export default function RoomCard({ room }) {
+export default function RoomCard({ room, serialNumber }) {
   const { user } = useContext(AuthContext)
   const { bookings, addBooking, hasRoomConflict } = useContext(BookingContext)
 
@@ -132,7 +132,12 @@ export default function RoomCard({ room }) {
     <>
       <article className="rounded-2xl border border-cyan-100 bg-white/85 p-5 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-lg font-bold text-slate-900">{room.name}</h2>
+          <div>
+            <p className="text-xs font-semibold text-cyan-700">
+              Room #{serialNumber}
+            </p>
+            <h2 className="text-lg font-bold text-slate-900 capitalize">{room.name}</h2>
+          </div>
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
               isBookedByMe
@@ -144,7 +149,7 @@ export default function RoomCard({ room }) {
           </span>
         </div>
 
-        <p className="mt-1 text-sm text-slate-600">{room.description}</p>
+        <p className="mt-1 text-sm text-slate-600 capitalize">{room.description}</p>
         <p className="mt-3 font-semibold text-slate-900">{`\u20B9${room.price}`} / night</p>
 
         <div className="mt-4 mb-3 grid gap-3">

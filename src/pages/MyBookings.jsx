@@ -183,7 +183,9 @@ export default function MyBookings() {
                   key={booking.id}
                   className="rounded-2xl border border-cyan-100 bg-white/85 p-5 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <h2 className="text-lg font-bold text-slate-900">{booking.roomName}</h2>
+                  <h2 className="text-lg font-bold text-slate-900 capitalize">
+                    {booking.roomName}
+                  </h2>
                   <p className="mt-2 text-sm text-slate-600">
                     {booking.startDate} to {booking.endDate}
                   </p>
@@ -224,7 +226,8 @@ export default function MyBookings() {
         >
           <h3 className="text-lg font-bold text-slate-900">Modify Booking</h3>
           <p className="mt-1 text-sm text-slate-600">
-            {bookingToEdit?.roomName} ({`\u20B9${bookingToEdit?.price || 0}`} / night)
+            <span className="capitalize">{bookingToEdit?.roomName}</span>{" "}
+            ({`\u20B9${bookingToEdit?.price || 0}`} / night)
           </p>
 
           <div className="mt-4 grid gap-3">
@@ -316,7 +319,7 @@ export default function MyBookings() {
           <h3 className="text-lg font-bold text-slate-900">Cancel Booking?</h3>
           <p className="mt-2 text-sm text-slate-600">
             This will cancel your booking for{" "}
-            <span className="font-semibold text-slate-800">
+            <span className="font-semibold text-slate-800 capitalize">
               {bookingToCancel?.roomName}
             </span>
             .
