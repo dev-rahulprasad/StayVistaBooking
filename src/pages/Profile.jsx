@@ -13,6 +13,9 @@ export default function Profile() {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
@@ -110,36 +113,63 @@ export default function Profile() {
               <label className="mb-1 block text-sm font-semibold text-cyan-700">
                 Current Password
               </label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full rounded-lg border border-cyan-200 bg-white px-3 py-2.5 text-sm outline-none transition-all duration-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
-              />
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full rounded-lg border border-cyan-200 bg-white px-3 py-2.5 pr-16 text-sm outline-none transition-all duration-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword((prev) => !prev)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-50"
+                >
+                  {showCurrentPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-semibold text-cyan-700">
                 New Password
               </label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full rounded-lg border border-cyan-200 bg-white px-3 py-2.5 text-sm outline-none transition-all duration-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full rounded-lg border border-cyan-200 bg-white px-3 py-2.5 pr-16 text-sm outline-none transition-all duration-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-50"
+                >
+                  {showNewPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
 
             <div>
               <label className="mb-1 block text-sm font-semibold text-cyan-700">
                 Confirm New Password
               </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-lg border border-cyan-200 bg-white px-3 py-2.5 text-sm outline-none transition-all duration-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-lg border border-cyan-200 bg-white px-3 py-2.5 pr-16 text-sm outline-none transition-all duration-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold text-cyan-700 hover:bg-cyan-50"
+                >
+                  {showConfirmPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
           </div>
 

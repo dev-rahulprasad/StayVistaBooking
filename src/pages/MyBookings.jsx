@@ -1,8 +1,9 @@
-import { useContext, useMemo, useState } from "react"
+import { useContext, useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { BookingContext } from "../context/BookingContext"
 import { AuthContext } from "../context/AuthContext"
 import CalendarDateField from "../components/CalendarDateField"
+import { lockBodyScroll, unlockBodyScroll } from "../utils/scrollLock"
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -34,6 +35,36 @@ export default function MyBookings() {
   const [endDate, setEndDate] = useState("")
   const [editError, setEditError] = useState("")
 
+  useEffect(() => {
+    if (!bookingToEdit && !bookingToCancel) return
+    lockBodyScroll()
+
+    return () => {
+      unlockBodyScroll()
+    }
+  }, [bookingToEdit, bookingToCancel])
+
+  useEffect(() => {
+    if (!bookingToEdit && !bookingToCancel) return
+
+    const handleEscape = (event) => {
+      if (event.key !== "Escape") return
+      if (bookingToCancel) {
+        setBookingToCancel(null)
+        return
+      }
+      if (bookingToEdit) {
+        setBookingToEdit(null)
+        setStartDate("")
+        setEndDate("")
+        setEditError("")
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape)
+    return () => window.removeEventListener("keydown", handleEscape)
+  }, [bookingToCancel, bookingToEdit])
+
   const bounds = useMemo(() => getDateBounds(), [])
 
   const myBookings = useMemo(() => {
@@ -52,6 +83,13 @@ export default function MyBookings() {
     const total = baseCharge + serviceFee + tax
     return { nights, baseCharge, serviceFee, tax, total }
   }, [bookingToEdit, startDate, endDate])
+
+  const isDateRangeChanged = useMemo(() => {
+    if (!bookingToEdit) return false
+    return (
+      startDate !== bookingToEdit.startDate || endDate !== bookingToEdit.endDate
+    )
+  }, [bookingToEdit, endDate, startDate])
 
   const editStartCalendarDates = useMemo(() => {
     if (!bookingToEdit) return []
@@ -196,13 +234,13 @@ export default function MyBookings() {
                   <div className="mt-4 flex gap-2">
                     <button
                       onClick={() => openEditModal(booking)}
-                      className="rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:from-cyan-700 hover:to-emerald-700"
+                      className="cursor-pointer rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:from-cyan-700 hover:to-emerald-700"
                     >
                       Modify Dates
                     </button>
                     <button
                       onClick={() => setBookingToCancel(booking)}
-                      className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-rose-700"
+                      className="cursor-pointer rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-rose-700"
                     >
                       Cancel
                     </button>
@@ -215,12 +253,14 @@ export default function MyBookings() {
       </div>
 
       <div
-        className={`fixed inset-0 z-40 flex items-center justify-center bg-slate-900/45 p-4 transition-opacity duration-300 ${
+        onClick={closeEditModal}
+        className={`fixed inset-0 z-40 flex cursor-pointer items-center justify-center bg-slate-900/45 p-4 transition-opacity duration-300 ${
           bookingToEdit ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
         <div
-          className={`w-full max-w-md rounded-2xl border border-cyan-100 bg-white/95 p-5 shadow-2xl backdrop-blur transition-all duration-300 ${
+          onClick={(event) => event.stopPropagation()}
+          className={`w-full max-w-md cursor-default rounded-2xl border border-cyan-100 bg-white/95 p-5 shadow-2xl backdrop-blur transition-all duration-300 ${
             bookingToEdit ? "translate-y-0 scale-100" : "translate-y-2 scale-95"
           }`}
         >
@@ -288,17 +328,23 @@ export default function MyBookings() {
           </div>
 
           {editError && <p className="mt-3 text-sm text-rose-600">{editError}</p>}
+          {!editError && bookingToEdit && !isDateRangeChanged && (
+            <p className="mt-3 text-sm text-slate-500">
+              Choose different dates to update your booking.
+            </p>
+          )}
 
           <div className="mt-5 flex gap-2">
             <button
               onClick={closeEditModal}
-              className="w-1/2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-100"
+              className="w-1/2 cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-100"
             >
               Close
             </button>
             <button
               onClick={handleUpdateBooking}
-              className="w-1/2 rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:from-cyan-700 hover:to-emerald-700"
+              className="w-1/2 cursor-pointer rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:from-cyan-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400"
+              disabled={!chargeDetails || !isDateRangeChanged}
             >
               Save Changes
             </button>
@@ -307,12 +353,14 @@ export default function MyBookings() {
       </div>
 
       <div
-        className={`fixed inset-0 z-40 flex items-center justify-center bg-slate-900/45 p-4 transition-opacity duration-300 ${
+        onClick={() => setBookingToCancel(null)}
+        className={`fixed inset-0 z-40 flex cursor-pointer items-center justify-center bg-slate-900/45 p-4 transition-opacity duration-300 ${
           bookingToCancel ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
         <div
-          className={`w-full max-w-sm rounded-2xl border border-rose-100 bg-white/95 p-5 shadow-2xl backdrop-blur transition-all duration-300 ${
+          onClick={(event) => event.stopPropagation()}
+          className={`w-full max-w-sm cursor-default rounded-2xl border border-rose-100 bg-white/95 p-5 shadow-2xl backdrop-blur transition-all duration-300 ${
             bookingToCancel ? "translate-y-0 scale-100" : "translate-y-2 scale-95"
           }`}
         >
@@ -328,13 +376,13 @@ export default function MyBookings() {
           <div className="mt-5 flex gap-2">
             <button
               onClick={() => setBookingToCancel(null)}
-              className="w-1/2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-100"
+              className="w-1/2 cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-100"
             >
               Keep
             </button>
             <button
               onClick={handleCancelBooking}
-              className="w-1/2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-rose-700"
+              className="w-1/2 cursor-pointer rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-rose-700"
             >
               Yes, Cancel
             </button>

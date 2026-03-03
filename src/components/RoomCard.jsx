@@ -1,7 +1,7 @@
-import { useContext, useMemo, useState } from "react"
+import { useContext, useEffect, useMemo, useState } from "react"
 import { BookingContext } from "../context/BookingContext"
 import { AuthContext } from "../context/AuthContext"
-import CalendarDateField from "./CalendarDateField"
+import { lockBodyScroll, unlockBodyScroll } from "../utils/scrollLock"
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -9,23 +9,46 @@ function calculateNights(startDate, endDate) {
   return Math.round((new Date(endDate) - new Date(startDate)) / DAY_MS)
 }
 
-function isDateUnavailable(dateValue, roomName, bookings) {
-  return bookings.some((booking) => {
-    if (booking.roomName !== roomName) return false
-    const day = new Date(dateValue)
-    return day >= new Date(booking.startDate) && day < new Date(booking.endDate)
-  })
-}
-
-export default function RoomCard({ room, serialNumber }) {
+export default function RoomCard({
+  room,
+  serialNumber,
+  selectedStartDate,
+  selectedEndDate,
+}) {
   const { user } = useContext(AuthContext)
   const { bookings, addBooking, hasRoomConflict } = useContext(BookingContext)
 
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
   const [message, setMessage] = useState("")
   const [showPricePopup, setShowPricePopup] = useState(false)
   const [priceDetails, setPriceDetails] = useState(null)
+
+  useEffect(() => {
+    if (!showPricePopup) return
+    lockBodyScroll()
+
+    return () => {
+      unlockBodyScroll()
+    }
+  }, [showPricePopup])
+
+  useEffect(() => {
+    if (!showPricePopup) return
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setShowPricePopup(false)
+      }
+    }
+
+    window.addEventListener("keydown", handleEscape)
+    return () => window.removeEventListener("keydown", handleEscape)
+  }, [showPricePopup])
+
+  useEffect(() => {
+    setMessage("")
+    setPriceDetails(null)
+    setShowPricePopup(false)
+  }, [selectedEndDate, selectedStartDate])
 
   const isBookedByMe = useMemo(() => {
     if (!user?.email) return false
@@ -35,55 +58,46 @@ export default function RoomCard({ room, serialNumber }) {
     )
   }, [bookings, room.name, user?.email])
 
-  const nextThirtyDays = useMemo(() => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    return Array.from({ length: 30 }).map((_, index) => {
-      const date = new Date(today)
-      date.setDate(today.getDate() + index)
-      const dateValue = date.toISOString().slice(0, 10)
-      const unavailable = isDateUnavailable(dateValue, room.name, bookings)
-      return {
-        dateValue,
-        unavailable,
-      }
-    })
-  }, [bookings, room.name])
-
-  const endDateOptions = useMemo(() => {
-    if (!startDate) {
-      return nextThirtyDays.map((item) => ({ ...item, unavailable: true }))
-    }
-
-    return nextThirtyDays.map((item) => ({
-      ...item,
-      unavailable:
-        item.dateValue <= startDate ||
-        hasRoomConflict({
-          roomName: room.name,
-          startDate,
-          endDate: item.dateValue,
-        }),
-    }))
-  }, [hasRoomConflict, nextThirtyDays, room.name, startDate])
-
   const selectedRangeConflict =
-    startDate && endDate
+    selectedStartDate && selectedEndDate
       ? hasRoomConflict({
           roomName: room.name,
-          startDate,
-          endDate,
+          startDate: selectedStartDate,
+          endDate: selectedEndDate,
         })
       : false
 
+  const availabilityBadge = useMemo(() => {
+    if (selectedStartDate && selectedEndDate) {
+      return selectedRangeConflict
+        ? {
+            text: "Unavailable",
+            className: "bg-rose-100 text-rose-700",
+          }
+        : {
+            text: "Available",
+            className: "bg-emerald-100 text-emerald-800",
+          }
+    }
+
+    return isBookedByMe
+      ? {
+          text: "Booked",
+          className: "bg-amber-100 text-amber-800",
+        }
+      : {
+          text: "Available",
+          className: "bg-emerald-100 text-emerald-800",
+        }
+  }, [isBookedByMe, selectedEndDate, selectedRangeConflict, selectedStartDate])
+
   const openPricingPopup = () => {
-    if (!startDate || !endDate) {
-      setMessage("Please select dates.")
+    if (!selectedStartDate || !selectedEndDate) {
+      setMessage("Please select dates from the top filter first.")
       return
     }
 
-    const nights = calculateNights(startDate, endDate)
+    const nights = calculateNights(selectedStartDate, selectedEndDate)
     if (nights <= 0) {
       setMessage("End date must be after start date.")
       return
@@ -113,8 +127,8 @@ export default function RoomCard({ room, serialNumber }) {
   const confirmBooking = () => {
     const result = addBooking({
       roomName: room.name,
-      startDate,
-      endDate,
+      startDate: selectedStartDate,
+      endDate: selectedEndDate,
       price: room.price,
       userEmail: user?.email,
     })
@@ -123,14 +137,12 @@ export default function RoomCard({ room, serialNumber }) {
     setShowPricePopup(false)
     if (!result.ok) return
 
-    setStartDate("")
-    setEndDate("")
     setPriceDetails(null)
   }
 
   return (
     <>
-      <article className="rounded-2xl border border-cyan-100 bg-white/85 p-5 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <article className="rounded-xl border border-cyan-100 bg-white/85 p-5 shadow-sm backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold text-cyan-700">
@@ -139,46 +151,21 @@ export default function RoomCard({ room, serialNumber }) {
             <h2 className="text-lg font-bold text-slate-900 capitalize">{room.name}</h2>
           </div>
           <span
-            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-              isBookedByMe
-                ? "bg-amber-100 text-amber-800"
-                : "bg-emerald-100 text-emerald-800"
-            }`}
+            className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${availabilityBadge.className}`}
           >
-            {isBookedByMe ? "Booked" : "Available"}
+            {availabilityBadge.text}
           </span>
         </div>
 
         <p className="mt-1 text-sm text-slate-600 capitalize">{room.description}</p>
-        <p className="mt-3 font-semibold text-slate-900">{`\u20B9${room.price}`} / night</p>
+        <p className="mt-3 font-semibold text-slate-900">{`\u20B9${room.price}`} / Night</p>
+        {selectedStartDate && selectedEndDate && (
+          <p className="mt-3 text-xs font-medium text-slate-500">
+            Selected: {selectedStartDate} to {selectedEndDate}
+          </p>
+        )}
 
-        <div className="mt-4 mb-3 grid gap-3">
-          <CalendarDateField
-            label="Check in (next 30 days)"
-            dates={nextThirtyDays}
-            value={startDate}
-            placeholder="Select check in date"
-            onChange={(value) => {
-              setStartDate(value)
-              setEndDate("")
-              setMessage("")
-            }}
-          />
-
-          <CalendarDateField
-            label={startDate ? "Check out" : "Check out (select check in first)"}
-            dates={endDateOptions}
-            value={endDate}
-            placeholder={startDate ? "Select check out date" : "Select check in first"}
-            disabled={!startDate}
-            onChange={(value) => {
-              setEndDate(value)
-              setMessage("")
-            }}
-          />
-        </div>
-
-        {selectedRangeConflict && (
+        {selectedStartDate && selectedEndDate && selectedRangeConflict && (
           <p className="mb-3 text-xs font-medium text-rose-600">
             Room is unavailable for the selected dates.
           </p>
@@ -186,8 +173,8 @@ export default function RoomCard({ room, serialNumber }) {
 
         <button
           onClick={openPricingPopup}
-          className="w-full rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 px-4 py-2.5 font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:from-cyan-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400"
-          disabled={selectedRangeConflict}
+          className="mt-4 w-full cursor-pointer rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 px-4 py-2.5 font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:from-cyan-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400"
+          disabled={!selectedStartDate || !selectedEndDate || selectedRangeConflict}
         >
           Review Charges
         </button>
@@ -206,18 +193,20 @@ export default function RoomCard({ room, serialNumber }) {
       </article>
 
       <div
-        className={`fixed inset-0 z-40 flex items-center justify-center bg-slate-900/45 p-4 transition-opacity duration-300 ${
+        onClick={() => setShowPricePopup(false)}
+        className={`fixed inset-0 z-40 flex cursor-pointer items-center justify-center bg-slate-900/45 p-4 transition-opacity duration-300 ${
           showPricePopup ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
         <div
-          className={`w-full max-w-sm rounded-2xl border border-cyan-100 bg-white/95 p-5 shadow-2xl backdrop-blur transition-all duration-300 ${
+          onClick={(event) => event.stopPropagation()}
+          className={`w-full max-w-sm cursor-default rounded-xl border border-cyan-100 bg-white/95 p-5 shadow-2xl backdrop-blur transition-all duration-300 ${
             showPricePopup ? "translate-y-0 scale-100" : "translate-y-2 scale-95"
           }`}
         >
           <h3 className="text-lg font-bold text-slate-900">Booking Charges</h3>
           <p className="mt-1 text-sm text-slate-500">
-            {startDate} to {endDate}
+            {selectedStartDate} to {selectedEndDate}
           </p>
 
           <div className="mt-4 space-y-2 text-sm">
@@ -244,13 +233,14 @@ export default function RoomCard({ room, serialNumber }) {
           <div className="mt-5 flex gap-2">
             <button
               onClick={() => setShowPricePopup(false)}
-              className="w-1/2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-100"
+              className="w-1/2 cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-100"
             >
               Close
             </button>
             <button
               onClick={confirmBooking}
-              className="w-1/2 rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:from-cyan-700 hover:to-emerald-700"
+              className="w-1/2 cursor-pointer rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:from-cyan-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-400"
+              disabled={!priceDetails}
             >
               Confirm
             </button>

@@ -83,7 +83,7 @@ export default function AvailabilityCalendar({
                     "h-9 rounded-md border text-xs font-semibold transition-all duration-200"
 
                   const availableClass =
-                    "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                    "cursor-pointer border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
 
                   const unavailableClass =
                     "cursor-not-allowed border-rose-200 bg-rose-50 text-rose-700"

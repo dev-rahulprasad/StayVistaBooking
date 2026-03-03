@@ -54,6 +54,14 @@ export function BookingProvider({ children }) {
       return { ok: false, message: "Please login again to continue." }
     }
 
+    if (!booking.startDate || !booking.endDate) {
+      return { ok: false, message: "Please select valid booking dates." }
+    }
+
+    if (new Date(booking.endDate) <= new Date(booking.startDate)) {
+      return { ok: false, message: "End date must be after start date." }
+    }
+
     if (!isWithinNextThirtyDays(booking.startDate, booking.endDate)) {
       return {
         ok: false,
