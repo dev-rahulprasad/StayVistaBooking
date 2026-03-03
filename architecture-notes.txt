@@ -1,0 +1,63 @@
+Architecture Notes - StayVista Booking App
+==========================================
+
+1) High-level structure
+- Routing is managed in src/router/AppRouter.jsx.
+- App state is split into two context providers:
+  - AuthContext: login/signup/session/profile updates
+  - BookingContext: booking CRUD-like operations + availability validation
+- UI is page-driven under src/pages with reusable components in src/components.
+
+2) Why Context + localStorage
+- This assignment is frontend-only, so Context is a simple and effective shared state mechanism.
+- localStorage gives persistence across refreshes without backend setup.
+- Auth and booking logic are centralized in contexts to keep page components focused on rendering and user interaction.
+
+3) Route design decisions
+- Public landing page at "/" for discoverability.
+- Protected pages (dashboard/bookings/profile) redirect to login when unauthenticated.
+- "/account" is an intent route:
+  - authenticated users go to profile
+  - unauthenticated users go to login/signup
+- Catch-all 404 route improves UX and prevents dead-end navigation.
+
+4) Booking rules and validation model
+- Booking conflict logic is in BookingContext and reused by pages/components.
+- Rules:
+  - Only next 30 days are allowed.
+  - End date must be after start date.
+  - Same room cannot be double-booked for overlapping ranges.
+  - Users can only modify/cancel their own bookings.
+- Keeping these rules in context avoids duplicating critical checks in multiple UI files.
+
+5) Date picker UX
+- Native date input cannot reliably style individual day cells across browsers.
+- A custom calendar was introduced to enforce:
+  - available dates in green (+ light green hover)
+  - unavailable dates in red (disabled)
+- Calendar opens on click (date-field behavior similar to HTML date input popover), so UI remains compact.
+
+6) Profile/email update handling
+- Profile update supports name/email/password update in AuthContext.
+- If email changes, BookingContext reassigns bookings from old email to new email.
+- This preserves ownership consistency for existing bookings.
+
+7) Styling approach
+- Unified visual system across pages:
+  - gradient backgrounds
+  - soft/glass cards
+  - consistent transition classes
+  - strong CTA buttons
+- Components and modals are designed mobile-first with wrapping headers and scroll-safe popups.
+
+8) Tradeoffs and limitations
+- Passwords are stored in plain text in localStorage (not secure for real production).
+- No backend means no multi-device sync and no server-side authorization.
+- Conflict checks are client-side only and trust local state.
+- For production, migrate to backend auth/session/token model and a proper database.
+
+9) Suggested future improvements
+- Replace localStorage auth with secure backend authentication.
+- Add unit tests for booking overlap and profile-update flows.
+- Add global toast system for status feedback.
+- Add i18n/date formatting abstraction and accessibility audit.
